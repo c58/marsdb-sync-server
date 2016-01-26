@@ -23,7 +23,7 @@ describe('Subscription', function () {
     Collection.defaultDelegate(oldDlegate);
   });
 
-  describe('#_getDocumentsByCursor', function () {
+  describe('#_getDocumentsByCursors', function () {
     it('should return all documents by cursor tree', function () {
       const collA = new Collection('a');
       const collB = new Collection('b');
@@ -41,8 +41,9 @@ describe('Subscription', function () {
             ]).observe()
           ]).observe()
         ]);
+        const cursor_2 = collA.find();
         return cursor.observe(() => {}).then(() => {
-          const docsMap = utils._getDocumentsByCursor(cursor);
+          const docsMap = utils._getDocumentsByCursors([cursor, cursor_2]);
           docsMap.should.have.ownProperty('a');
           docsMap.should.have.ownProperty('b');
           docsMap.should.have.ownProperty('c');

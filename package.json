@@ -1,6 +1,6 @@
 {
-  "name": "marsdb-mongo",
-  "version": "0.0.2",
+  "name": "marsdb-sync-server",
+  "version": "0.0.1",
   "author": {
     "name": "Artem Artemev",
     "email": "art@studytime.me"
@@ -8,7 +8,7 @@
   "contributors": [
     "Artem Artemev"
   ],
-  "description": "MarsDB plugin for making all queries works through MongoDB, for rehydration",
+  "description": "MarsDB DDP server for wotking with MarsDB Cleint (or with Meteor)",
   "keywords": [
     "mongo",
     "minimongo",
@@ -18,17 +18,17 @@
     "database",
     "meteor"
   ],
-  "homepage": "https://github.com/c58/marsdb-mongo",
+  "homepage": "https://github.com/c58/marsdb-sync-server",
   "repository": {
     "type": "git",
-    "url": "git@github.com:c58/marsdb-mongo.git"
+    "url": "git@github.com:c58/marsdb-sync-server.git"
   },
   "dependencies": {
     "bufferutil": "^1.2.1",
     "check-types": "^6.0.0",
     "fast.js": "^0.1.1",
     "invariant": "^2.2.0",
-    "marsdb": "^0.5.10",
+    "marsdb": "^0.5.12",
     "marsdb-mongo": "^0.0.5",
     "utf-8-validate": "^1.2.1",
     "ws": "^1.0.1"
