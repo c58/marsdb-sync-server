@@ -1,4 +1,4 @@
-import SubscriptionManager, { * as utils } from '../../lib/SubscriptionManager';
+import SubscriptionManager, * as utils from '../../lib/SubscriptionManager';
 import { Collection, Random } from 'marsdb';
 import chai, {expect} from 'chai';
 import sinon from 'sinon';
