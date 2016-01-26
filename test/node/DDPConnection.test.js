@@ -177,10 +177,40 @@ describe('DDPConnection', function () {
         conn._sendMessage.getCall(0).args[0].fields.should.be.deep.equals({a: 1});
         conn._sendMessage.getCall(0).args[0].msg.should.be.equals('added');
       });
+
+      it('should send message only if given argument is object', function () {
+        conn.sendAdded('coll_name', 'id1', '23123');
+        conn._sendMessage.should.have.callCount(0);
+        conn.sendAdded('coll_name', 'id1', undefined);
+        conn._sendMessage.should.have.callCount(0);
+        conn.sendAdded('coll_name', 'id1', null);
+        conn._sendMessage.should.have.callCount(0);
+        conn.sendAdded('coll_name', 'id1', 123123);
+        conn._sendMessage.should.have.callCount(0);
+        conn.sendAdded('coll_name', 'id1', {});
+        conn._sendMessage.should.have.callCount(1);
+      });
+    });
+
+    describe('#_handleClose', function () {
+      it('should do nothing', function () {
+        conn._handleClose();
+      });
+    });
+
+    describe('#_getErrorMessageByObject', function () {
+      it('should create error object for nosub and result', function () {
+        conn._getErrorMessageByObject(null).should.be.deep.equals({error: 'unknown error'});
+        conn._getErrorMessageByObject(undefined).should.be.deep.equals({error: 'unknown error'});
+        conn._getErrorMessageByObject({}).should.be.deep.equals({error: 'unknown error'});
+        conn._getErrorMessageByObject('asd').should.be.deep.equals({error: 'unknown error'});
+        conn._getErrorMessageByObject(new Error('some error')).should.be.deep.equals({error: 'some error'});
+      });
     });
 
     describe('#_handleRawMessage', function () {
       it('should return a promise that resolved when message processed', function () {
+        conn._processMessage = () => conn._sendMessage();
         const p = conn._handleRawMessage(EJSON.stringify('{"msg": "ping", "id": "123"}'));
         const p1 = conn._handleRawMessage(EJSON.stringify('{"msg": "ping", "id": "123"}'));
         const p2 = conn._handleRawMessage(EJSON.stringify('{"msg": "ping", "id": "123"}'));
@@ -224,6 +254,8 @@ describe('DDPConnection', function () {
       it('should rise exception if not connected', function () {
         conn.emitAsync = sinon.spy();
         (() => conn._processMessage({msg: 'sub'})).should.throw(Error);
+        (() => conn._processMessage({msg: 'ping'})).should.not.throw(Error);
+        (() => conn._processMessage({msg: 'pong'})).should.not.throw(Error);
         (() => conn._processMessage({msg: 'connect'})).should.not.throw(Error);
         (() => conn._processMessage({msg: 'sub'})).should.not.throw(Error);
       });
@@ -231,6 +263,15 @@ describe('DDPConnection', function () {
         conn.emitAsync = sinon.spy();
         (() => conn._processMessage({msg: 'connect'})).should.not.throw(Error);
         (() => conn._processMessage({msg: 'subbbbbb'})).should.throw(Error);
+      });
+      it('should support only DDP message types', function () {
+        conn.emitAsync = sinon.spy();
+        (() => conn._processMessage({msg: 'connect'})).should.not.throw(Error);
+        (() => conn._processMessage({msg: 'sub'})).should.not.throw(Error);
+        (() => conn._processMessage({msg: 'ping'})).should.not.throw(Error);
+        (() => conn._processMessage({msg: 'pong'})).should.not.throw(Error);
+        (() => conn._processMessage({msg: 'method'})).should.not.throw(Error);
+        (() => conn._processMessage({msg: 'unsub'})).should.not.throw(Error);
       });
     });
 

@@ -257,19 +257,23 @@ describe('SubscriptionManager', function () {
       const cb = sinon.spy();
       const connMock = {
         on: sinon.spy(),
+        sendNoSub: sinon.spy(),
         sendResult: sinon.spy(),
         sendUpdated: sinon.spy(),
         subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
       };
       const manager = new SubscriptionManager(connMock);
       const handler = connMock.on.getCall(0).args[1];
-      (() => handler({id: '1', name: 'nopub'})).should.throw(Error);
+      handler({id: '1', name: 'nopub'});
+      connMock.sendNoSub.should.have.callCount(1);
+      connMock.sendNoSub.getCall(0).args[1].should.be.instanceof(Error);
     });
 
     it('should do nothing if subscription with given id already exists', function () {
       const cb = sinon.spy();
       const connMock = {
         on: sinon.spy(),
+        sendNoSub: sinon.spy(),
         sendResult: sinon.spy(),
         sendUpdated: sinon.spy(),
         subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
@@ -285,6 +289,7 @@ describe('SubscriptionManager', function () {
       const cb = sinon.spy();
       const connMock = {
         on: sinon.spy(),
+        sendNoSub: sinon.spy(),
         sendReady: sinon.spy(),
         sendAdded: sinon.spy(),
       };
