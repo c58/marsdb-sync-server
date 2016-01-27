@@ -1,4 +1,4 @@
-# MarsDB TodoMVC
+# MarsDB Sync Cleint/Server example
 
 ## Installation
 
