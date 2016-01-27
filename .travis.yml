@@ -9,4 +9,4 @@ install:
 node_js:
   - "5.3"
 
-script: npm test
+script: npm run coveralls
