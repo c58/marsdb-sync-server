@@ -3,6 +3,7 @@ import {IndexRoute, Route, browserHistory, Router} from 'react-router';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import DDP from 'ddp.js';
+import { Random } from 'marsdb';
 
 
 class DDPTestComponent extends React.Component {
@@ -76,10 +77,21 @@ class DDPTestComponent extends React.Component {
   };
 
   handleInsert = () => {
-    this.ddp.method('/todos/insert', [{
-      text: 'Todo #' + Math.random(),
-      complete: false,
-    }]);
+    const seed = Random.default().id(20);
+    const sequenceSeed = [seed, `/collection/todos`];
+    const seededID = Random.createWithSeeds.apply(null, sequenceSeed).id(17);
+
+    this.ddp.messageQueue.push({
+      msg: "method",
+      id: Random.default().id(),
+      method: '/todos/insert',
+      randomSeed: seed,
+      params: [{
+        _id: seededID,
+        text: 'Todo #' + Math.random(),
+        complete: false,
+      }]
+    });
   };
 
   handleUnsub = () => {
