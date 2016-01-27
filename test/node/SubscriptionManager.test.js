@@ -418,4 +418,21 @@ describe('SubscriptionManager', function () {
       connMock.sendChanged.should.have.callCount(1);
     });
   });
+
+  describe('#_handleAcceptedRemoteInsert', function () {
+    it('should register in remote a document with zero counter', function () {
+      const connMock = {
+        on: sinon.spy(),
+        sendReady: sinon.spy(),
+        sendAdded: sinon.spy(),
+        sendRemoved: sinon.spy(),
+        sendChanged: sinon.spy(),
+      };
+      const manager = new SubscriptionManager(connMock);
+      manager._handleAcceptedRemoteInsert({a: 1, _id: '1'}, 'test');
+      manager._remoteDocs.test['1'].should.be.deep.equals(
+        {count: 0, doc: {a: 1, _id: '1'}}
+      );
+    });
+  });
 });

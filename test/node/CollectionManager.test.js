@@ -50,6 +50,35 @@ describe('CollectionManager', function () {
         doc.a.should.be.equal(1);
       });
     });
+
+    it('should handle accepted remote insert', function () {
+      const connMock = {
+        on: sinon.spy(),
+        sendResult: sinon.spy(),
+        sendUpdated: sinon.spy(),
+        subManager: {
+          whenAllCursorsUpdated: () => Promise.resolve(),
+          _handleAcceptedRemoteInsert: sinon.spy(),
+        },
+      };
+      const seed = Random.default().id(20);
+      const sequenceSeed = [seed, `/collection/test`];
+      const seededID = Random.createWithSeeds.apply(null, sequenceSeed).id(17);
+      const coll = new Collection('test');
+      const manager = new MethodCallManager(connMock);
+      const handler = connMock.on.getCall(0).args[1];
+      return handler({
+        method: '/test/insert',
+        params: [{a: 1, _id: seededID}],
+        randomSeed: seed,
+      }).then((docId) => {
+        connMock.subManager._handleAcceptedRemoteInsert.should.have.callCount(1);
+        connMock.subManager._handleAcceptedRemoteInsert.getCall(0)
+          .args[0].should.be.deep.equal({a: 1, _id: seededID});
+        connMock.subManager._handleAcceptedRemoteInsert.getCall(0)
+          .args[1].should.be.deep.equal('test');
+      });
+    });
   });
 
   describe('#_remoteUpdate', function () {
