@@ -15,8 +15,8 @@ describe('HeartbeatManager', function () {
     cbPing = sinon.spy();
     cbPong = sinon.spy();
     cbTimeout = sinon.spy();
-    hb.on('ping', cbPing);
-    hb.on('pong', cbPong);
+    hb.on('sendPing', cbPing);
+    hb.on('sendPong', cbPong);
     hb.on('timeout', cbTimeout);
   });
   afterEach(function () {

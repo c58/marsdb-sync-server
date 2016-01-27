@@ -14,6 +14,12 @@ describe('DDPConnection', function () {
     conn = new DDPConnection(rawConn);
   });
 
+  describe('#constructor', function () {
+    it('should wait heartbeat ping', function () {
+
+    });
+  });
+
   describe('#_sendMessage', function () {
     it('should send json encoded message', function () {
       conn._sendMessage({a: 1, b: 2});
@@ -292,6 +298,12 @@ describe('DDPConnection', function () {
         conn._connected.should.be.true;
         conn._handleConnectMessage();
         conn._sendMessage.should.have.callCount(1);
+      });
+
+      it('should wait ping in heartbeat', function () {
+        conn._heartbeat = {waitPing: sinon.spy()};
+        conn._handleConnectMessage();
+        conn._heartbeat.waitPing.should.have.callCount(1);
       });
     });
   });
