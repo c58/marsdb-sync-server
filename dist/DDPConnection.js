@@ -59,6 +59,7 @@ var DDPConnection = function (_AsyncEventEmitter) {
 
     var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(DDPConnection).call(this));
 
+    _this.context = {};
     _this._rawConn = rawConn;
     _this._queue = new _PromiseQueue2.default(1);
     _this._connected = false;

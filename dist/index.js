@@ -8,6 +8,10 @@ Object.defineProperty(exports, "__esModule", {
 exports._handleNewConnection = _handleNewConnection;
 exports.configure = configure;
 
+var _map2 = require('fast.js/map');
+
+var _map3 = _interopRequireDefault(_map2);
+
 var _invariant = require('invariant');
 
 var _invariant2 = _interopRequireDefault(_invariant);
@@ -36,6 +40,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 // Internals
 var _sockjsServer = null;
+var _customManagers = [];
 
 /**
  * Wrap a connection with DDPConnection wrapper
@@ -48,6 +53,9 @@ function _handleNewConnection(connection) {
   var ddpConn = new _DDPConnection2.default(connection);
   ddpConn.methodsManager = new _MethodCallManager2.default(ddpConn);
   ddpConn.subManager = new _SubscriptionManager2.default(ddpConn);
+  ddpConn.customManagers = (0, _map3.default)(_customManagers, function (m) {
+    return new m(ddpConn);
+  });
   return ddpConn;
 }
 
@@ -65,4 +73,5 @@ function configure(_ref) {
   _marsdb2.default.defaultDelegate((0, _CollectionManager.createCollectionManager)());
   _sockjsServer = new _ws.Server(_extends({}, options, { server: server }));
   _sockjsServer.on('connection', _handleNewConnection);
+  _customManagers = options.managers || [];
 }

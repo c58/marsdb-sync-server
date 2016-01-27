@@ -2,6 +2,8 @@
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 Object.defineProperty(exports, "__esModule", {
@@ -249,7 +251,8 @@ var SubscriptionManager = function () {
           var _ret2 = function () {
             var fn = _publishers[name];
             var connection = _this._ddpConn;
-            var result = fn.apply(undefined, [{ connection: connection }].concat(_toConsumableArray(params)));
+            var ctx = _extends({}, connection.context, { connection: connection });
+            var result = fn.apply(undefined, [ctx].concat(_toConsumableArray(params)));
             var resultArr = _checkTypes2.default.array(result) ? result : [result];
             var sub = new _Subscription2.default(resultArr, _this._handleSubscriptionUpdate);
             _this._subscribed[id] = sub;
@@ -331,6 +334,12 @@ var SubscriptionManager = function () {
           connection.sendRemoved(collName, id);
         });
       });
+    }
+  }, {
+    key: '_handleAcceptedRemoteInsert',
+    value: function _handleAcceptedRemoteInsert(doc, collName) {
+      this._remoteDocs[collName] = this._remoteDocs[collName] || {};
+      this._remoteDocs[collName][doc._id] = { count: 0, doc: doc };
     }
   }, {
     key: '_appendDocuments',

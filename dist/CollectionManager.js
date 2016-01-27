@@ -103,7 +103,9 @@ function createCollectionManager() {
         var randomSeed = _ref.randomSeed;
         var connection = _ref.connection;
 
-        this._ensureDocumentId(doc, connection, randomSeed);
+        if (this._ensureDocumentId(doc, connection, randomSeed)) {
+          connection.subManager._handleAcceptedRemoteInsert(doc, this.db.modelName);
+        }
         return this.db.insert(doc);
       }
     }, {
@@ -134,8 +136,11 @@ function createCollectionManager() {
           if (!acceptId) {
             connection.sendRemoved(doc._id);
             delete doc._id;
+          } else {
+            return true;
           }
         }
+        return false;
       }
     }]);
 
