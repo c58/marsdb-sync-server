@@ -1,4 +1,4 @@
-[MarsDB Synchronization Server](https://github.com/c58/marsdb-sync-server)
+[MarsDB DDP Server](https://github.com/c58/marsdb-sync-server)
 =========
 
 [![Build Status](https://travis-ci.org/c58/marsdb-sync-server.svg?branch=master)](https://travis-ci.org/c58/marsdb-sync-server)
@@ -6,7 +6,7 @@
 [![Coverage Status](https://coveralls.io/repos/c58/marsdb-sync-server/badge.svg?branch=master&service=github)](https://coveralls.io/github/c58/marsdb-sync-server?branch=master)
 [![Dependency Status](https://david-dm.org/c58/marsdb-sync-server.svg)](https://david-dm.org/c58/marsdb-sync-server)
 
-MarsDB synchronization server based on a [DDP](https://github.com/meteor/meteor/blob/devel/packages/ddp/DDP.md) protocol, introduced in Meteor. It supports **methods**, **pub/sub** and **collection operations** (insert/update/remove).
+MarsDB DDP server based on a [DDP](https://github.com/meteor/meteor/blob/devel/packages/ddp/DDP.md) protocol, introduced in Meteor. It supports **methods**, **pub/sub** and **collection operations** (insert/update/remove).
 
 ## Features
 
