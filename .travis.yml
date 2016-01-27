@@ -6,19 +6,6 @@ install:
   - npm install -g babel-cli
   - npm install
 
-services:
-  - mongodb
-
-addons:
-  apt:
-    sources:
-    - mongodb-3.2-precise
-    packages:
-    - mongodb-org-server
-
-env:
-  - TEST_MONGO_ADDR=mongodb://127.0.0.1/mars_mongo_tests
-
 node_js:
   - "5.3"
 
