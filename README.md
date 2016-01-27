@@ -22,7 +22,15 @@ It's only a concept until 1.0. Use it for your own risk.
 ## Examples
 
 ### Basic Express/Webpack example
-Complete example of usage is located in [./example](https://github.com/c58/marsdb-sync-server/tree/master/example) directory.
+The repository comes with a simple example. To try it out:
+
+```
+git clone https://github.com/c58/marsdb-sync-server.git
+cd marsdb-sync-server/example && npm install
+npm start
+```
+
+Then, just point your browser at `http://localhost:3000`.
 
 ### Configure a server
 ```javascript
