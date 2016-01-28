@@ -18,6 +18,7 @@ It's a Meteor compitable [DDP](https://github.com/meteor/meteor/blob/devel/packa
 ## WARNING
 
 It's only a concept until 1.0. Use it for your own risk.
+It does not support scaling, handled only changes happened on one instance. Scaling will be handled by [MarsDB-Mongo](https://github.com/c58/marsdb-mongo) module.
 
 ## Examples
 
@@ -92,6 +93,24 @@ method('sayHello', (ctx, name = 'unknown') => {
   // `updated` message sended to a client when all promises
   // will be resolved.
 });
+```
+### Using with MongoDB
+By default MarsDB uses memory to store collections. You can easily configure it for using MongoDB as a backend.
+Just configure MarsDB to use MongoDB **before** any instance of a Collection class created
+```javascript
+// server.js
+import MarsMongo from 'marsdb-mongo';
+// DO NOT import Colllection releted modules here
+// ...other imports
+
+// ...some server configuration
+MarsMongo.configure({ url: 'mongodb://127.0.0.1:27017' });
+MarsSync.configure({ server: server });
+
+// Require all Collection releted modules
+requireDir('./js/models');
+requireDir('./js/publishers');
+requireDir('./js/methods');
 ```
 
 ## Roadmap
