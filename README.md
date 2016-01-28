@@ -94,8 +94,8 @@ method('sayHello', (ctx, name = 'unknown') => {
   // will be resolved.
 });
 ```
-### Using with MongoDB
-By default MarsDB uses memory to store collections. You can easily configure it for using MongoDB as a backend.
+### Using with MongoDB (and other storages)
+By default MarsDB uses memory to store collections. You can easily configure it for using MongoDB (or other [storages](https://github.com/c58/marsdb#plugins)) as a backend.
 Just configure MarsDB to use MongoDB **before** any instance of a Collection class created
 ```javascript
 // server.js
