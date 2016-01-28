@@ -221,6 +221,7 @@ var SubscriptionManager = function () {
 
     ddpConn.on('message:sub', (0, _bind3.default)(this._handleSubscribe, this));
     ddpConn.on('message:unsub', (0, _bind3.default)(this._handleUnsubscribe, this));
+    ddpConn.once('close', (0, _bind3.default)(this._handleClose, this));
   }
 
   _createClass(SubscriptionManager, [{
@@ -233,6 +234,15 @@ var SubscriptionManager = function () {
         });
       });
       return Promise.all(promises);
+    }
+  }, {
+    key: '_handleClose',
+    value: function _handleClose() {
+      (0, _forEach2.default)(this._subscribed, function (sub) {
+        return sub.stop();
+      });
+      this._subscribed = {};
+      this._remoteDocs = {};
     }
   }, {
     key: '_handleSubscribe',

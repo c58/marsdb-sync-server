@@ -98,11 +98,16 @@ function _diffDocumentsMap() {
  */
 
 var Subscription = function () {
-  function Subscription(cursorsArr, updateCallback) {
+  function Subscription() {
+    var cursorsArr = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+    var updateCallback = arguments[1];
+
     _classCallCheck(this, Subscription);
 
     this._callback = updateCallback;
     this._cursors = cursorsArr;
+    this._latestResult = {};
+    this._stoppers = [];
     this._handleCursorChange = (0, _marsdb.debounce)((0, _bind3.default)(this._handleCursorChange, this), 1000 / 30, 0);
   }
 
@@ -114,19 +119,18 @@ var Subscription = function () {
   }, {
     key: 'stop',
     value: function stop() {
-      (0, _invariant2.default)(this._stoppers, 'stop(...): subscription is not started');
       (0, _forEach2.default)(this._stoppers, function (stopper) {
         return stopper.stop();
       });
-      delete this._stoppers;
-      delete this._latestResult;
+      this._stoppers = [];
+      this._latestResult = {};
     }
   }, {
     key: 'start',
     value: function start() {
       var _this = this;
 
-      (0, _invariant2.default)(!this._stoppers, 'start(...): subscription is already started');
+      (0, _invariant2.default)(!this._stoppers || this._stoppers.length === 0, 'start(...): subscription is already started');
       var stopeprs = (0, _map3.default)(this._cursors, function (cursor) {
         return cursor.observe(function () {
           return _this._handleCursorChange();

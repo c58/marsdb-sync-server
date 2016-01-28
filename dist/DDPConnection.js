@@ -165,9 +165,11 @@ var DDPConnection = function (_AsyncEventEmitter) {
     value: function _sendMessage(msgObj) {
       var _this2 = this;
 
-      (0, _try3.default)(function () {
-        return _this2._rawConn.send(_marsdb.EJSON.stringify(msgObj));
-      });
+      if (!this._closed) {
+        (0, _try3.default)(function () {
+          return _this2._rawConn.send(_marsdb.EJSON.stringify(msgObj));
+        });
+      }
     }
   }, {
     key: '_getErrorMessageByObject',
@@ -177,6 +179,7 @@ var DDPConnection = function (_AsyncEventEmitter) {
   }, {
     key: '_handleClose',
     value: function _handleClose() {
+      this._closed = true;
       this._heartbeat._clearTimers();
       this.emit('close');
     }
