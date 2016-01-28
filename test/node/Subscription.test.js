@@ -202,17 +202,30 @@ describe('Subscription', function () {
 
     it('should rise an exception if observing already started', function () {
       const sub = new Subscription();
-      sub._stoppers = [];
+      sub._stoppers = [{}, {}];
       (() => sub.start()).should.throw(Error);
     });
   });
 
   describe('#stop', function () {
-    it('should rise an exception if observing NOT started', function () {
+    it('should be ok with multiple stop calls', function () {
       const sub = new Subscription();
-      (() => sub.stop()).should.throw(Error);
+      sub.stop();
+      const stoppers = [
+        {stop: sinon.spy()},
+        {stop: sinon.spy()},
+        {stop: sinon.spy()},
+      ];
+      sub._stoppers = stoppers;
+      sub.stop();
+      sub.stop();
+      sub.stop();
+      expect(sub._stoppers).to.be.deep.equals([]);
+      expect(sub._latestResult).to.be.deep.equals({});
+      stoppers[0].stop.should.have.callCount(1);
+      stoppers[1].stop.should.have.callCount(1);
+      stoppers[2].stop.should.have.callCount(1);
     });
-
     it('should stop all observers', function () {
       const sub = new Subscription();
       const stoppers = [
@@ -223,8 +236,8 @@ describe('Subscription', function () {
       sub._latestResult = {a: {}};
       sub._stoppers = stoppers;
       sub.stop();
-      expect(sub._stoppers).to.be.undefined;
-      expect(sub._latestResult).to.be.undefined;
+      expect(sub._stoppers).to.be.deep.equals([]);
+      expect(sub._latestResult).to.be.deep.equals({});
       stoppers[0].stop.should.have.callCount(1);
       stoppers[1].stop.should.have.callCount(1);
       stoppers[2].stop.should.have.callCount(1);

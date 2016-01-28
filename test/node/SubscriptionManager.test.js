@@ -8,8 +8,19 @@ chai.should();
 
 
 describe('SubscriptionManager', function () {
+  let connMock;
   beforeEach(function () {
     utils._clearPublishers();
+    connMock = {
+      on: sinon.spy(),
+      once: sinon.spy(),
+      sendReady: sinon.spy(),
+      sendAdded: sinon.spy(),
+      sendRemoved: sinon.spy(),
+      sendChanged: sinon.spy(),
+      sendNoSub: sinon.spy(),
+      subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
+    };
   });
 
   describe('#_noop', function () {
@@ -211,15 +222,34 @@ describe('SubscriptionManager', function () {
     });
   });
 
+  describe('#_handleClose', function () {
+    it('should stop all subs and remove links to subs and documents', function () {
+      const cb = sinon.spy();
+      const manager = new SubscriptionManager(connMock);
+      manager._subscribed = [{stop: cb}, {stop: cb}];
+      manager._remoteDocs = {a: {b: 1}};
+      manager._handleClose();
+      manager._subscribed.should.be.deep.equals({});
+      manager._remoteDocs.should.be.deep.equals({});
+      cb.should.have.callCount(2);
+    });
+
+    it('should be called once on connection emits `close` event', function () {
+      const cb = sinon.spy();
+      const manager = new SubscriptionManager(connMock);
+      connMock.once.should.have.callCount(1);
+      connMock.once.getCall(0).args[0].should.be.equals('close');
+      manager._subscribed = [{stop: cb}, {stop: cb}];
+      connMock.once.getCall(0).args[1]();
+      manager._subscribed.should.be.deep.equals({});
+      manager._remoteDocs.should.be.deep.equals({});
+      cb.should.have.callCount(2);
+    });
+  });
+
   describe('#whenAllCursorsUpdated', function () {
     it('should resolve a Promise only when all observers updated', function () {
       const cb = sinon.spy();
-      const connMock = {
-        on: sinon.spy(),
-        sendResult: sinon.spy(),
-        sendUpdated: sinon.spy(),
-        subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
-      };
       const manager = new SubscriptionManager(connMock);
       const collA = new Collection('a');
       const collB = new Collection('b');
@@ -255,13 +285,6 @@ describe('SubscriptionManager', function () {
   describe('#_handleSubscribe', function () {
     it('should rise an exception if publisher with given name not exists', function () {
       const cb = sinon.spy();
-      const connMock = {
-        on: sinon.spy(),
-        sendNoSub: sinon.spy(),
-        sendResult: sinon.spy(),
-        sendUpdated: sinon.spy(),
-        subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
-      };
       const manager = new SubscriptionManager(connMock);
       const handler = connMock.on.getCall(0).args[1];
       handler({id: '1', name: 'nopub'});
@@ -271,13 +294,6 @@ describe('SubscriptionManager', function () {
 
     it('should do nothing if subscription with given id already exists', function () {
       const cb = sinon.spy();
-      const connMock = {
-        on: sinon.spy(),
-        sendNoSub: sinon.spy(),
-        sendResult: sinon.spy(),
-        sendUpdated: sinon.spy(),
-        subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
-      };
       const manager = new SubscriptionManager(connMock);
       const handler = connMock.on.getCall(0).args[1];
       manager._subscribed['1'] = {};
@@ -287,12 +303,6 @@ describe('SubscriptionManager', function () {
 
     it('should make subscription, start it and return promise', function () {
       const cb = sinon.spy();
-      const connMock = {
-        on: sinon.spy(),
-        sendNoSub: sinon.spy(),
-        sendReady: sinon.spy(),
-        sendAdded: sinon.spy(),
-      };
       const manager = new SubscriptionManager(connMock);
       const collA = new Collection('a');
       const collB = new Collection('b');
@@ -328,7 +338,6 @@ describe('SubscriptionManager', function () {
 
   describe('#_handleUnsubscribe', function () {
     it('should do nothing if sub with given id not exists', function () {
-      const connMock = { on: sinon.spy() };
       const manager = new SubscriptionManager(connMock);
       const handler = connMock.on.getCall(1).args[1];
       handler({id: '123'}).should.be.false;
@@ -340,13 +349,6 @@ describe('SubscriptionManager', function () {
 
     it('should stop sub, remove docs and sent nosub', function () {
       const cb = sinon.spy();
-      const connMock = {
-        on: sinon.spy(),
-        sendReady: sinon.spy(),
-        sendAdded: sinon.spy(),
-        sendRemoved: sinon.spy(),
-        sendNoSub: sinon.spy(),
-      };
       const manager = new SubscriptionManager(connMock);
       const collA = new Collection('a');
       const collB = new Collection('b');
@@ -382,13 +384,6 @@ describe('SubscriptionManager', function () {
 
   describe('#_handleSubscriptionUpdate', function () {
     it('should send all updates to a client', function () {
-      const connMock = {
-        on: sinon.spy(),
-        sendReady: sinon.spy(),
-        sendAdded: sinon.spy(),
-        sendRemoved: sinon.spy(),
-        sendChanged: sinon.spy(),
-      };
       const manager = new SubscriptionManager(connMock);
       manager._handleSubscriptionUpdate({
         added: {a: {id1: {_id:'id1', a: 1}}},
@@ -421,13 +416,6 @@ describe('SubscriptionManager', function () {
 
   describe('#_handleAcceptedRemoteInsert', function () {
     it('should register in remote a document with zero counter', function () {
-      const connMock = {
-        on: sinon.spy(),
-        sendReady: sinon.spy(),
-        sendAdded: sinon.spy(),
-        sendRemoved: sinon.spy(),
-        sendChanged: sinon.spy(),
-      };
       const manager = new SubscriptionManager(connMock);
       manager._handleAcceptedRemoteInsert({a: 1, _id: '1'}, 'test');
       manager._remoteDocs.test['1'].should.be.deep.equals(

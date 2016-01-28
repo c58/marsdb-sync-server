@@ -26,6 +26,14 @@ describe('DDPConnection', function () {
       rawConn.send.should.have.callCount(1);
       rawConn.send.getCall(0).args[0].should.be.equals(EJSON.stringify({a: 1, b: 2}));
     });
+
+    it('should send message only when not closed', function () {
+      conn._sendMessage({a: 1, b: 2});
+      rawConn.send.should.have.callCount(1);
+      conn._handleClose();
+      conn._sendMessage({a: 1, b: 2});
+      rawConn.send.should.have.callCount(1);
+    });
   });
 
   describe('Senders', function () {
@@ -199,8 +207,12 @@ describe('DDPConnection', function () {
     });
 
     describe('#_handleClose', function () {
-      it('should do nothing', function () {
+      it('should emit `close` event and set _closed field', function () {
+        const cb = sinon.spy();
+        conn.once('close', cb);
         conn._handleClose();
+        cb.should.have.callCount(1);
+        conn._closed.should.be.true;
       });
     });
 
