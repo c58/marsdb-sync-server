@@ -36,6 +36,7 @@ Then, just point your browser at `http://localhost:3000`.
 ```javascript
 import http from 'http';
 import MarsSync from 'marsdb-sync-server';
+import requireDir from 'require-dir';
 
 // Some server configuration
 // ...
