@@ -6,7 +6,7 @@
 [![Coverage Status](https://coveralls.io/repos/c58/marsdb-sync-server/badge.svg?branch=master&service=github)](https://coveralls.io/github/c58/marsdb-sync-server?branch=master)
 [![Dependency Status](https://david-dm.org/c58/marsdb-sync-server.svg)](https://david-dm.org/c58/marsdb-sync-server)
 
-It's a Meteor compitable [DDP](https://github.com/meteor/meteor/blob/devel/packages/ddp/DDP.md) server, based on [MarsDB](https://github.com/c58/marsdb), but with major [improvements](https://github.com/c58/marsdb-sync-server#features). It supports **methods**, **pub/sub** and **collection operations**. It have very similar to the original Meteor interface, so, you really knows how to use it, if you are familiar with Meteor. But it also higly customizable, because it can be used with any server, that you passed to a `configure` function. Check out a basic [example](https://github.com/c58/marsdb-sync-server#basic-expresswebpack-example) with express and webpack.
+It's a Meteor compitable [DDP](https://github.com/meteor/meteor/blob/devel/packages/ddp/DDP.md) server, based on [MarsDB](https://github.com/c58/marsdb), but with major [improvements](https://github.com/c58/marsdb-sync-server#features). It supports **methods**, **pub/sub** and **collection operations**. It have very similar to the original Meteor interface, so, you really knows how to use it, if you are familiar with Meteor. But it also highly customizable, because it can be used with any server, that you passed to a `configure` function. Check out a basic [example](https://github.com/c58/marsdb-sync-server#basic-expresswebpack-example) with express and webpack.
 
 ## Features
 
