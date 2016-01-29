@@ -1,3 +1,6 @@
+import MethodCallManager, { _cleanMethods } from '../../lib/MethodCallManager';
+import { createCollectionManager, _registerCollection,
+  _clearRegisteredCollections } from '../../lib/CollectionManager';
 import SubscriptionManager, * as utils from '../../lib/SubscriptionManager';
 import { Collection, Random } from 'marsdb';
 import chai, {expect} from 'chai';
@@ -11,6 +14,8 @@ describe('SubscriptionManager', function () {
   let connMock;
   beforeEach(function () {
     utils._clearPublishers();
+    _clearRegisteredCollections();
+    _cleanMethods();
     connMock = {
       on: sinon.spy(),
       once: sinon.spy(),

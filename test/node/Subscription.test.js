@@ -11,16 +11,9 @@ chai.should();
 
 
 describe('Subscription', function () {
-  let oldDlegate;
   beforeEach(function () {
-    oldDlegate = Collection.defaultDelegate();
     _clearRegisteredCollections();
     _cleanMethods();
-    Collection.defaultDelegate(createCollectionManager());
-  });
-
-  afterEach(function () {
-    Collection.defaultDelegate(oldDlegate);
   });
 
   describe('#_getDocumentsByCursors', function () {

@@ -10,16 +10,9 @@ chai.should();
 
 
 describe('CollectionManager', function () {
-  let oldDlegate;
   beforeEach(function () {
-    oldDlegate = Collection.defaultDelegate();
     _clearRegisteredCollections();
     _cleanMethods();
-    Collection.defaultDelegate(createCollectionManager());
-  });
-
-  afterEach(function () {
-    Collection.defaultDelegate(oldDlegate);
   });
 
   describe('#_registerCollection', function () {
