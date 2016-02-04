@@ -228,29 +228,27 @@ describe('DDPConnection', function () {
 
     describe('#_handleRawMessage', function () {
       it('should return a promise that resolved when message processed', function () {
-        conn._processMessage = () => conn._sendMessage();
+        conn._processMessage = sinon.spy(() => Promise.resolve());
         const p = conn._handleRawMessage(EJSON.stringify('{"msg": "ping", "id": "123"}'));
         const p1 = conn._handleRawMessage(EJSON.stringify('{"msg": "ping", "id": "123"}'));
         const p2 = conn._handleRawMessage(EJSON.stringify('{"msg": "ping", "id": "123"}'));
-        conn._sendMessage.should.have.callCount(1);
-        return p.then(() => {
-          conn._sendMessage.should.have.callCount(2);
-          return p1;
-        }).then(() => {
-          conn._sendMessage.should.have.callCount(3);
-          return p2;
-        }).then(() => {
-          conn._sendMessage.should.have.callCount(3);
-        })
+        conn._processMessage.should.have.callCount(0);
+        return Promise.resolve().then(() => {
+          conn._processMessage.should.have.callCount(1);
+          return p1.then(() => {
+            conn._processMessage.should.have.callCount(3);
+          })
+        });
       });
 
       it('should send an error message if error rised while proccessing', function () {
-        conn._handleRawMessage('{"a": 1');
-        conn._sendMessage.getCall(0).args[0].msg.should.be.equals('error');
-        return conn._handleRawMessage('{"msg": "unknown_type"}').then(() => {
-          conn._sendMessage.getCall(1).args[0].msg.should.be.equals('error');
-          conn._sendMessage.should.have.callCount(2);
-        });
+        return conn._handleRawMessage('{"a": 1').then(() => {
+              conn._sendMessage.getCall(0).args[0].msg.should.be.equals('error');
+              return conn._handleRawMessage('{"msg": "unknown_type"}').then(() => {
+                conn._sendMessage.getCall(1).args[0].msg.should.be.equals('error');
+                conn._sendMessage.should.have.callCount(2);
+              })
+          });
       });
     });
 
