@@ -23,6 +23,14 @@ describe('HeartbeatManager', function () {
     clock.restore();
   });
 
+  describe('#consturctor', function () {
+    it('should set default wait time', function () {
+      const newhb = new HeartbeatManager();
+      expect(newhb.pingTimeout).to.be.gt(0);
+      expect(newhb.pongTimeout).to.be.gt(0);
+    });
+  });
+
   describe('#waitPing', function () {
     it('should wait ping message and send ping on timeout', function () {
       hb.waitPong = sinon.spy();
