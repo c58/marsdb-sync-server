@@ -19,6 +19,7 @@ describe('SubscriptionManager', function () {
     connMock = {
       on: sinon.spy(),
       once: sinon.spy(),
+      emit: sinon.spy(),
       sendReady: sinon.spy(),
       sendAdded: sinon.spy(),
       sendRemoved: sinon.spy(),

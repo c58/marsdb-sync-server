@@ -39,6 +39,7 @@ describe('MethodCallManager', function () {
         on: sinon.spy(),
         sendResult: sinon.spy(),
         sendUpdated: sinon.spy(),
+        emit: sinon.spy(),
         subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
       };
       const manager = new MethodCallManager(connMock);
@@ -78,6 +79,7 @@ describe('MethodCallManager', function () {
     it('should rise an exception if given method not exists', function () {
       const connMock = {
         on: sinon.spy(),
+        emit: sinon.spy(),
         subManager: { whenAllCursorsUpdated: () => Promise.resolve() }
       };
       const manager = new MethodCallManager(connMock);
@@ -151,6 +153,7 @@ describe('MethodCallManager', function () {
         on: sinon.spy(),
         sendResult: sinon.spy(),
         sendUpdated: sinon.spy(),
+        emit: sinon.spy(),
         subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
       };
       const manager = new MethodCallManager(connMock);
