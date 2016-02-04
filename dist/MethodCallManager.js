@@ -105,6 +105,7 @@ var MethodCallManager = function () {
       });
 
       if (callResult instanceof Error) {
+        this._ddpConn.emit('error', { error: callResult, method: method, params: params, id: id });
         this._handleProcessingError(id, callResult);
         return Promise.resolve();
       } else {

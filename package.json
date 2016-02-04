@@ -1,6 +1,6 @@
 {
   "name": "marsdb-sync-server",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "author": {
     "name": "Artem Artemev",
     "email": "art@studytime.me"
@@ -33,7 +33,7 @@
     "check-types": "^6.0.0",
     "fast.js": "^0.1.1",
     "invariant": "^2.2.0",
-    "marsdb": "^0.5.19",
+    "marsdb": "^0.5.21",
     "ws": "^1.0.1"
   },
   "devDependencies": {

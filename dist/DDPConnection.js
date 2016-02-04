@@ -44,6 +44,10 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+// Internals
+var HEARTBEAT_INTERVAL = 15000;
+var HEARTBEAT_TIMEOUT = 15000;
+
 /**
  * WebSocket connection wrapper, that handles incoming messages
  * and emits an appropriate events.
@@ -64,7 +68,7 @@ var DDPConnection = function (_AsyncEventEmitter) {
     _this._queue = new _PromiseQueue2.default(1);
     _this._connected = false;
     _this._sessionId = null;
-    _this._heartbeat = new _HeartbeatManager2.default();
+    _this._heartbeat = new _HeartbeatManager2.default(HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT);
 
     _this._heartbeat.on('timeout', (0, _bind3.default)(_this._handleHearbeatTimeout, _this));
     _this._heartbeat.on('sendPing', (0, _bind3.default)(_this.sendPing, _this));
@@ -189,19 +193,16 @@ var DDPConnection = function (_AsyncEventEmitter) {
       var _this3 = this;
 
       return this._queue.add(function () {
-        var res = (0, _try3.default)(function () {
-          var msgObj = _marsdb.EJSON.parse(rawMsg);
-          return _this3._processMessage(msgObj);
-        });
-        if (res instanceof Error) {
-          return _this3._handleProcessingError(res);
-        }
-        return res;
+        var msgObj = _marsdb.EJSON.parse(rawMsg);
+        return _this3._processMessage(msgObj);
+      }).then(null, function (err) {
+        return _this3._handleProcessingError(err);
       });
     }
   }, {
     key: '_handleProcessingError',
     value: function _handleProcessingError(err) {
+      this.emit('error', err);
       this._sendMessage({
         msg: 'error',
         reason: err && err.message || 'unknown error'

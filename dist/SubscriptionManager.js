@@ -279,6 +279,7 @@ var SubscriptionManager = function () {
       });
 
       if (callResult instanceof Error) {
+        this._ddpConn.emit('error', { error: callResult, name: name, params: params, id: id });
         this._ddpConn.sendNoSub(id, callResult);
         return Promise.resolve();
       } else {

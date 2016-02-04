@@ -31,6 +31,8 @@ var _MethodCallManager = require('./MethodCallManager');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -61,9 +63,10 @@ function _registerCollection(coll, manager) {
 
   var modelName = coll.modelName;
   _definedCollections[modelName] = 1;
-  (0, _MethodCallManager.method)('/' + modelName + '/insert', (0, _bind3.default)(manager._remoteInsert, manager), { noAnswer: true });
-  (0, _MethodCallManager.method)('/' + modelName + '/update', (0, _bind3.default)(manager._remoteUpdate, manager), { noAnswer: true });
-  (0, _MethodCallManager.method)('/' + modelName + '/remove', (0, _bind3.default)(manager._remoteRemove, manager), { noAnswer: true });
+  (0, _MethodCallManager.method)('/' + modelName + '/insert', (0, _bind3.default)(manager._remoteInsert, manager));
+  (0, _MethodCallManager.method)('/' + modelName + '/update', (0, _bind3.default)(manager._remoteUpdate, manager));
+  (0, _MethodCallManager.method)('/' + modelName + '/remove', (0, _bind3.default)(manager._remoteRemove, manager));
+  (0, _MethodCallManager.method)('/' + modelName + '/sync', (0, _bind3.default)(manager._remoteSync, manager));
 }
 
 /**
@@ -99,28 +102,39 @@ function createCollectionManager() {
 
     _createClass(CollectionManager, [{
       key: '_remoteInsert',
-      value: function _remoteInsert(_ref, doc) {
+      value: function _remoteInsert(_ref, doc, options) {
         var randomSeed = _ref.randomSeed;
         var connection = _ref.connection;
 
         if (this._ensureDocumentId(doc, connection, randomSeed)) {
           connection.subManager._handleAcceptedRemoteInsert(doc, this.db.modelName);
         }
-        return this.db.insert(doc);
+        return this.db.insert(doc, options);
       }
     }, {
       key: '_remoteUpdate',
-      value: function _remoteUpdate(_ref2, query, modifier) {
+      value: function _remoteUpdate(_ref2, query, modifier, options) {
         var randomSeed = _ref2.randomSeed;
         var connection = _ref2.connection;
 
         this._ensureDocumentId(modifier, connection, randomSeed);
-        return this.db.update(query, modifier);
+        return this.db.update(query, modifier, options);
       }
     }, {
       key: '_remoteRemove',
-      value: function _remoteRemove(ctx, query) {
-        return this.db.remove(query);
+      value: function _remoteRemove(ctx, query, options) {
+        return this.db.remove(query, options);
+      }
+    }, {
+      key: '_remoteSync',
+      value: function _remoteSync(ctx, remoteIds) {
+        return this.db.ids({ _id: { $in: remoteIds } }).then(function (dbIds) {
+          remoteIds = new Set(remoteIds);
+          (0, _forEach2.default)(dbIds, function (id) {
+            return remoteIds.delete(id);
+          });
+          return [].concat(_toConsumableArray(remoteIds));
+        });
       }
     }, {
       key: '_ensureDocumentId',

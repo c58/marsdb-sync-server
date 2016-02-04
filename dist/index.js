@@ -34,6 +34,10 @@ var _SubscriptionManager = require('./SubscriptionManager');
 
 var _SubscriptionManager2 = _interopRequireDefault(_SubscriptionManager);
 
+var _ErrorManager = require('./ErrorManager');
+
+var _ErrorManager2 = _interopRequireDefault(_ErrorManager);
+
 var _CollectionManager = require('./CollectionManager');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -51,11 +55,12 @@ var _customManagers = [];
  */
 function _handleNewConnection(connection) {
   var ddpConn = new _DDPConnection2.default(connection);
-  ddpConn.methodsManager = new _MethodCallManager2.default(ddpConn);
-  ddpConn.subManager = new _SubscriptionManager2.default(ddpConn);
   ddpConn.customManagers = (0, _map3.default)(_customManagers, function (m) {
     return new m(ddpConn);
   });
+  ddpConn.methodsManager = new _MethodCallManager2.default(ddpConn);
+  ddpConn.subManager = new _SubscriptionManager2.default(ddpConn);
+  ddpConn.errorManager = new _ErrorManager2.default(ddpConn);
   return ddpConn;
 }
 
