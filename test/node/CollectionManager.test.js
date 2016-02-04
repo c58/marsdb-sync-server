@@ -128,6 +128,29 @@ describe('CollectionManager', function () {
     });
   });
 
+  describe('#_removeSync', function () {
+    it('should return a list of removed ids in db', function () {
+      const connMock = {
+        on: sinon.spy(),
+        sendResult: sinon.spy(),
+        sendUpdated: sinon.spy(),
+        subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
+      };
+      const coll = new Collection('test');
+      const manager = new MethodCallManager(connMock);
+      const handler = connMock.on.getCall(0).args[1];
+
+      return coll.insertAll([{_id: 1}, {_id: 2}]).then(() => {
+        return handler({
+          method: '/test/sync',
+          params: [[1,2,3]]
+        });
+      }).then((res) => {
+        res.should.be.deep.equal([3]);
+      })
+    });
+  });
+
   describe('#_ensureDocumentId', function () {
     it('should ignore ensuring if no id or no seed provided', function () {
       const connMock = { sendRemoved: sinon.spy() };
