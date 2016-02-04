@@ -101,6 +101,31 @@ describe('CollectionManager', function () {
         res[1].a.should.be.equal(2);
       });
     });
+
+    it('should accpet options for upserting and muktiple updates', function () {
+      const connMock = {
+        on: sinon.spy(),
+        sendResult: sinon.spy(),
+        sendUpdated: sinon.spy(),
+        subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
+      };
+      const coll = new Collection('test');
+      const manager = new MethodCallManager(connMock);
+      const handler = connMock.on.getCall(0).args[1];
+
+      return coll.insertAll([{a: 1}, {a: 2}]).then(() => {
+        return handler({
+          method: '/test/update',
+          params: [{}, {$set: {a: 3}}, {multi: true}]
+        });
+      }).then((res) => {
+        return coll.find();
+      }).then((res) => {
+        res.should.have.length(2);
+        res[0].a.should.be.equal(3);
+        res[1].a.should.be.equal(3);
+      });
+    });
   });
 
   describe('#_remoteRemove', function () {
@@ -124,6 +149,29 @@ describe('CollectionManager', function () {
         return coll.findOne({a: 1});
       }).then((res) => {
         expect(res).to.be.undefined;
+      });
+    });
+
+    it('should accept options for multiple removing', function () {
+      const connMock = {
+        on: sinon.spy(),
+        sendResult: sinon.spy(),
+        sendUpdated: sinon.spy(),
+        subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
+      };
+      const coll = new Collection('test');
+      const manager = new MethodCallManager(connMock);
+      const handler = connMock.on.getCall(0).args[1];
+
+      return coll.insertAll([{a: 1}, {a: 2}]).then(() => {
+        return handler({
+          method: '/test/remove',
+          params: [{}, {multi: true}]
+        });
+      }).then((res) => {
+        return coll.find({});
+      }).then((res) => {
+        res.should.have.length(0);
       });
     });
   });
