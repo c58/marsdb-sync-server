@@ -44,7 +44,7 @@ import requireDir from 'require-dir';
 const server = http.createServer();
 
 // Setup marsdb-sync-server
-MarsSync.configure({ server: server });
+MarsSync.configure({ server });
 
 // You must require all your models, publishers and methods.
 // They will be registered in MarsSync server.
@@ -53,6 +53,17 @@ requireDir('./js/publishers');
 requireDir('./js/methods');
 
 ```
+
+### Auto-publish
+```javascript
+// ...
+// Setup marsdb-sync-server with autoPublish enabled
+MarsSync.configure({ server, autoPublish: true });
+
+// With {autoPublish: true} all documents in each
+// collection will be sent to each newly connected client
+```
+
 ### Publising
 ```javascript
 import UserModel from '../models/User.model';
@@ -78,6 +89,7 @@ publish('allTodos', (ctx, arg1, arg2) => {
   // Must return a cursor or array of cursors.
 });
 ```
+
 ### Methods
 ```javascript
 import { method } from 'marsdb-sync-server';
@@ -94,6 +106,7 @@ method('sayHello', (ctx, name = 'unknown') => {
   // will be resolved.
 });
 ```
+
 ### Using with MongoDB (and other storages)
 By default MarsDB uses memory to store collections. You can easily configure it for using MongoDB (or other [storages](https://github.com/c58/marsdb#plugins)) as a backend.
 Just configure MarsDB to use MongoDB **before** any instance of a Collection class created
