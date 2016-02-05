@@ -245,6 +245,7 @@ var DDPConnection = function (_AsyncEventEmitter) {
           msg: 'connected',
           session: this._sessionId
         });
+        this.emit('connected');
       }
     }
   }]);
