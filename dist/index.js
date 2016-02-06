@@ -12,6 +12,10 @@ var _map2 = require('fast.js/map');
 
 var _map3 = _interopRequireDefault(_map2);
 
+var _forEach = require('fast.js/forEach');
+
+var _forEach2 = _interopRequireDefault(_forEach);
+
 var _invariant = require('invariant');
 
 var _invariant2 = _interopRequireDefault(_invariant);
@@ -39,6 +43,10 @@ var _ErrorManager = require('./ErrorManager');
 var _ErrorManager2 = _interopRequireDefault(_ErrorManager);
 
 var _CollectionManager = require('./CollectionManager');
+
+var _AutopublishManager = require('./AutopublishManager');
+
+var _AutopublishManager2 = _interopRequireDefault(_AutopublishManager);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -75,8 +83,22 @@ function configure(_ref) {
 
   (0, _invariant2.default)(!_sockjsServer, 'configure(...): sync server already configured');
 
+  // Setup connectino
   _marsdb2.default.defaultDelegate((0, _CollectionManager.createCollectionManager)());
   _sockjsServer = new _ws.Server(_extends({}, options, { server: server }));
   _sockjsServer.on('connection', _handleNewConnection);
   _customManagers = options.managers || [];
+
+  // Add AutopublishManager to the managers list.
+  // It also can be added manually.
+  if (options.autoPublish) {
+    _customManagers.push(_AutopublishManager2.default);
+  }
+
+  // Configure custom managers
+  (0, _forEach2.default)(_customManagers, function (man) {
+    if (man.configure) {
+      man.configure(options);
+    }
+  });
 }
