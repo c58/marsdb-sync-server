@@ -37,6 +37,7 @@ describe('MethodCallManager', function () {
       const cb = sinon.spy();
       const connMock = {
         on: sinon.spy(),
+        data: {},
         sendResult: sinon.spy(),
         sendUpdated: sinon.spy(),
         emit: sinon.spy(),
@@ -62,6 +63,7 @@ describe('MethodCallManager', function () {
       cb.should.have.callCount(1);
       cb.getCall(0).args.should.have.length(4);
       cb.getCall(0).args.should.be.deep.equal([{
+        data: {},
         connection: connMock,
         randomSeed: undefined,
       }, 1, 2, 3]);
@@ -95,10 +97,11 @@ describe('MethodCallManager', function () {
 
     it('should work without params and id', function () {
       const cb = sinon.spy();
-      const connMock = { on: sinon.spy() };
+      const connMock = { on: sinon.spy(), data: {} };
       const manager = new MethodCallManager(connMock);
       const handler = connMock.on.getCall(0).args[1];
       const ctx = {
+        data: {},
         connection: connMock,
         randomSeed: undefined,
       };

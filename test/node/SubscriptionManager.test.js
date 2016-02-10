@@ -17,6 +17,7 @@ describe('SubscriptionManager', function () {
     _clearRegisteredCollections();
     _cleanMethods();
     connMock = {
+      data: {},
       on: sinon.spy(),
       once: sinon.spy(),
       emit: sinon.spy(),
@@ -315,7 +316,7 @@ describe('SubscriptionManager', function () {
       const collC = new Collection('c');
 
       utils.publish('testPub', (ctx, arg1, arg2 = 'default') => {
-        ctx.should.be.deep.equals({connection: connMock});
+        ctx.should.be.deep.equals({connection: connMock, data: {}});
         arg1.should.be.deep.equals('testval');
         arg2.should.be.equals('default');
         return [
