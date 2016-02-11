@@ -39,7 +39,7 @@ app.use(webpackDevMiddleware(compiler, {
 }));
 
 // Configure marsdb-sync-server
-MarsSync.configure({ server: server });
+MarsSync.configure({ server });
 requireDir('./js/models');
 requireDir('./js/publishers');
 requireDir('./js/methods');
