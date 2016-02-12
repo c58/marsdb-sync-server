@@ -18,6 +18,10 @@ var _bind2 = require('fast.js/function/bind');
 
 var _bind3 = _interopRequireDefault(_bind2);
 
+var _marsdb = require('marsdb');
+
+var _marsdb2 = _interopRequireDefault(_marsdb);
+
 var _invariant = require('invariant');
 
 var _invariant2 = _interopRequireDefault(_invariant);
@@ -84,7 +88,7 @@ function configure() {
   (0, _invariant2.default)(!_sockjsServer, 'configure(...): sync server already configured');
 
   // Setup connectino
-  options.collection.defaultDelegate((0, _CollectionManager.createCollectionManager)());
+  _marsdb2.default.defaultDelegate((0, _CollectionManager.createCollectionManager)());
   _sockjsServer = new _ws.Server(options);
   _sockjsServer.on('connection', (0, _bind3.default)(_handleNewConnection, null, options));
   _customManagers = options.managers || [];
