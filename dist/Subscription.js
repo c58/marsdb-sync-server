@@ -101,9 +101,13 @@ var Subscription = function () {
   function Subscription() {
     var cursorsArr = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
     var updateCallback = arguments[1];
+    var name = arguments[2];
+    var params = arguments[3];
 
     _classCallCheck(this, Subscription);
 
+    this.name = name;
+    this.params = params;
     this._callback = updateCallback;
     this._cursors = cursorsArr;
     this._latestResult = {};
@@ -138,6 +142,13 @@ var Subscription = function () {
       });
       this._stoppers = stopeprs;
       return Promise.all(stopeprs);
+    }
+  }, {
+    key: 'replaceCursors',
+    value: function replaceCursors(newCursors) {
+      this.stop();
+      this._cursors = newCursors;
+      return this.start();
     }
   }, {
     key: '_handleCursorChange',

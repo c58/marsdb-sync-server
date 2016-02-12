@@ -2,8 +2,6 @@
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 Object.defineProperty(exports, "__esModule", {
@@ -14,12 +12,22 @@ exports._diffObjects = _diffObjects;
 exports._diffAddedWithRemote = _diffAddedWithRemote;
 exports._diffChangedWithRemote = _diffChangedWithRemote;
 exports._diffRemovedWithRemote = _diffRemovedWithRemote;
+exports._removeZeroDocuments = _removeZeroDocuments;
+exports._zeroAllDocuments = _zeroAllDocuments;
 exports._clearPublishers = _clearPublishers;
 exports.publish = publish;
 
 var _checkTypes = require('check-types');
 
 var _checkTypes2 = _interopRequireDefault(_checkTypes);
+
+var _map2 = require('fast.js/map');
+
+var _map3 = _interopRequireDefault(_map2);
+
+var _values2 = require('fast.js/object/values');
+
+var _values3 = _interopRequireDefault(_values2);
 
 var _forEach = require('fast.js/forEach');
 
@@ -186,6 +194,20 @@ function _diffRemovedWithRemote(subRemoved, remoteDocs) {
 }
 
 /**
+ * Remove all documents with zero count and return list
+ * of removed documents by collection
+ * @param  {Object} remoteDocs
+ * @return {Object}
+ */
+function _removeZeroDocuments(remoteDocs) {}
+
+/**
+ * Zero counters of all documents
+ * @param  {Object} remoteDocs
+ */
+function _zeroAllDocuments(remoteDocs) {}
+
+/**
  * Remove all registered publishers
  */
 function _clearPublishers() {
@@ -212,12 +234,39 @@ function publish(name, fn) {
 
 var SubscriptionManager = function () {
   function SubscriptionManager(ddpConn) {
+    var _this = this;
+
     _classCallCheck(this, SubscriptionManager);
+
+    this._handleSubscriptionUpdate = function (res) {
+      var _appendDocuments2 = _this._appendDocuments(res.added, res.changed);
+
+      var added = _appendDocuments2.added;
+      var changed = _appendDocuments2.changed;
+
+      var removed = _this._removeDocuments(res.removed);
+      var connection = _this._ddpConn;
+
+      (0, _forEach2.default)(added, function (docs, collName) {
+        (0, _forEach2.default)(docs, function (d, id) {
+          connection.sendAdded(collName, id, d);
+        });
+      });
+      (0, _forEach2.default)(changed, function (docs, collName) {
+        (0, _forEach2.default)(docs, function (d, id) {
+          connection.sendChanged(collName, id, d.fields, d.cleared);
+        });
+      });
+      (0, _forEach2.default)(removed, function (docs, collName) {
+        (0, _forEach2.default)(docs, function (d, id) {
+          connection.sendRemoved(collName, id);
+        });
+      });
+    };
 
     this._ddpConn = ddpConn;
     this._subscribed = {};
     this._remoteDocs = {};
-    this._handleSubscriptionUpdate = (0, _bind3.default)(this._handleSubscriptionUpdate, this);
 
     ddpConn.on('message:sub', (0, _bind3.default)(this._handleSubscribe, this));
     ddpConn.on('message:unsub', (0, _bind3.default)(this._handleUnsubscribe, this));
@@ -236,6 +285,25 @@ var SubscriptionManager = function () {
       return Promise.all(promises);
     }
   }, {
+    key: 'updateSubscriptions',
+    value: function updateSubscriptions() {
+      var _this2 = this;
+
+      return Promise.all((0, _map3.default)((0, _values3.default)(this._subscribed), function (sub) {
+        var newCursors = _this2._callPublisher(sub.name, sub.params);
+        return sub.replaceCursors(newCursors);
+      }));
+    }
+  }, {
+    key: '_callPublisher',
+    value: function _callPublisher(name, params) {
+      var fn = _publishers[name];
+      var connection = this._ddpConn;
+      var ctx = { data: connection.data, connection: connection };
+      var result = fn.apply(undefined, [ctx].concat(_toConsumableArray(params)));
+      return _checkTypes2.default.array(result) ? result : [result];
+    }
+  }, {
     key: '_handleClose',
     value: function _handleClose() {
       (0, _forEach2.default)(this._subscribed, function (sub) {
@@ -247,7 +315,7 @@ var SubscriptionManager = function () {
   }, {
     key: '_handleSubscribe',
     value: function _handleSubscribe(_ref2) {
-      var _this = this;
+      var _this3 = this;
 
       var id = _ref2.id;
       var name = _ref2.name;
@@ -257,15 +325,12 @@ var SubscriptionManager = function () {
       var callResult = (0, _try3.default)(function () {
         (0, _invariant2.default)(_publishers[name], 'There is no publisher with name \'%s\'', name);
 
-        if (!_this._subscribed[id]) {
+        if (!_this3._subscribed[id]) {
           var _ret2 = function () {
-            var fn = _publishers[name];
-            var connection = _this._ddpConn;
-            var ctx = _extends({}, connection.context, { connection: connection });
-            var result = fn.apply(undefined, [ctx].concat(_toConsumableArray(params)));
-            var resultArr = _checkTypes2.default.array(result) ? result : [result];
-            var sub = new _Subscription2.default(resultArr, _this._handleSubscriptionUpdate);
-            _this._subscribed[id] = sub;
+            var connection = _this3._ddpConn;
+            var cursors = _this3._callPublisher(name, params);
+            var sub = new _Subscription2.default(cursors, _this3._handleSubscriptionUpdate, name, params);
+            _this3._subscribed[id] = sub;
 
             return {
               v: sub.start().then(function () {
@@ -289,18 +354,18 @@ var SubscriptionManager = function () {
   }, {
     key: '_handleUnsubscribe',
     value: function _handleUnsubscribe(_ref3) {
-      var _this2 = this;
+      var _this4 = this;
 
       var id = _ref3.id;
 
       if (this._subscribed[id]) {
         var _ret3 = function () {
-          var sub = _this2._subscribed[id];
-          var connection = _this2._ddpConn;
+          var sub = _this4._subscribed[id];
+          var connection = _this4._ddpConn;
           var docsMap = sub.getDocumentsMap();
-          var removed = _this2._removeDocuments(docsMap);
+          var removed = _this4._removeDocuments(docsMap);
 
-          delete _this2._subscribed[id];
+          delete _this4._subscribed[id];
           sub.stop();
 
           (0, _forEach2.default)(removed, function (docs, collName) {
@@ -318,33 +383,6 @@ var SubscriptionManager = function () {
         if ((typeof _ret3 === 'undefined' ? 'undefined' : _typeof(_ret3)) === "object") return _ret3.v;
       }
       return false;
-    }
-  }, {
-    key: '_handleSubscriptionUpdate',
-    value: function _handleSubscriptionUpdate(res) {
-      var _appendDocuments2 = this._appendDocuments(res.added, res.changed);
-
-      var added = _appendDocuments2.added;
-      var changed = _appendDocuments2.changed;
-
-      var removed = this._removeDocuments(res.removed);
-      var connection = this._ddpConn;
-
-      (0, _forEach2.default)(added, function (docs, collName) {
-        (0, _forEach2.default)(docs, function (d, id) {
-          connection.sendAdded(collName, id, d);
-        });
-      });
-      (0, _forEach2.default)(changed, function (docs, collName) {
-        (0, _forEach2.default)(docs, function (d, id) {
-          connection.sendChanged(collName, id, d.fields, d.cleared);
-        });
-      });
-      (0, _forEach2.default)(removed, function (docs, collName) {
-        (0, _forEach2.default)(docs, function (d, id) {
-          connection.sendRemoved(collName, id);
-        });
-      });
     }
   }, {
     key: '_handleAcceptedRemoteInsert',

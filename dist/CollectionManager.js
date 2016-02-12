@@ -102,11 +102,13 @@ function createCollectionManager() {
 
     _createClass(CollectionManager, [{
       key: '_remoteInsert',
-      value: function _remoteInsert(_ref, doc, options) {
+      value: function _remoteInsert(_ref, doc) {
         var randomSeed = _ref.randomSeed;
         var connection = _ref.connection;
+        var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
-        if (this._ensureDocumentId(doc, connection, randomSeed)) {
+        var isIdValid = this._ensureDocumentId(doc, connection, randomSeed);
+        if (!options.waitReady && isIdValid) {
           connection.subManager._handleAcceptedRemoteInsert(doc, this.db.modelName);
         }
         return this.db.insert(doc, options);
