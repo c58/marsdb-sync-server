@@ -86,8 +86,8 @@ describe('AutopublishManager', function () {
 
     it('should throw an error if collection with given name already created', function () {
       AutopublishManager.configure();
-      const coll1 = new Collection('test1');
-      (() => new Collection('test1')).should.throw(Error);
+      new Collection('test1').storage;
+      (() => new Collection('test1').storage).should.throw(Error);
     });
 
     it('should memoize cursor for each collection', function () {
@@ -95,6 +95,7 @@ describe('AutopublishManager', function () {
       const coll1 = new Collection('test1');
       const subs = new SubscriptionManager(connMock);
       sinon.spy(coll1, "find");
+      coll1._lazyInitCollection();
 
       return Promise.all([
         subs._handleSubscribe({id: 1, name: '_autopublish/test1'})

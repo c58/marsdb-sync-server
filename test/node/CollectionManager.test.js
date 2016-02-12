@@ -17,8 +17,8 @@ describe('CollectionManager', function () {
 
   describe('#_registerCollection', function () {
     it('should register a collection and rise an exception on duplicate', function () {
-      const coll = new Collection('test');
-      (() => new Collection('test')).should.throw(Error);
+      const coll = new Collection('test').storage;
+      (() => new Collection('test').storage).should.throw(Error);
     });
   });
 
@@ -26,6 +26,7 @@ describe('CollectionManager', function () {
     it('should insert a document on remote message and return promise', function () {
       const connMock = {
         on: sinon.spy(),
+        emit: sinon.spy(),
         sendResult: sinon.spy(),
         sendUpdated: sinon.spy(),
         subManager: { whenAllCursorsUpdated: () => Promise.resolve() },
@@ -33,6 +34,7 @@ describe('CollectionManager', function () {
       const coll = new Collection('test');
       const manager = new MethodCallManager(connMock);
       const handler = connMock.on.getCall(0).args[1];
+      coll._lazyInitCollection();
       return handler({
         method: '/test/insert',
         params: [{a: 1}]
@@ -60,6 +62,7 @@ describe('CollectionManager', function () {
       const coll = new Collection('test');
       const manager = new MethodCallManager(connMock);
       const handler = connMock.on.getCall(0).args[1];
+      coll._lazyInitCollection();
       return handler({
         method: '/test/insert',
         params: [{a: 1, _id: seededID}],
@@ -204,6 +207,7 @@ describe('CollectionManager', function () {
       const connMock = { sendRemoved: sinon.spy() };
       const coll = new Collection('test');
       const doc = {a: 1};
+      coll._lazyInitCollection();
       coll.delegate._ensureDocumentId(doc);
       expect(doc._id).to.be.undefined;
       connMock.sendRemoved.should.have.callCount(0);
@@ -212,6 +216,7 @@ describe('CollectionManager', function () {
     it('should remove id if no randomSeed provided', function () {
       const connMock = { sendRemoved: sinon.spy() };
       const coll = new Collection('test');
+      coll._lazyInitCollection();
       const testIt = (randomSeed) => {
         let doc = {a: 1, _id: '1'};
         coll.delegate._ensureDocumentId(doc, connMock, randomSeed);
@@ -233,6 +238,7 @@ describe('CollectionManager', function () {
       const seededID = Random.createWithSeeds.apply(null, sequenceSeed).id(17);
       const connMock = { sendRemoved: sinon.spy() };
       const coll = new Collection('test');
+      coll._lazyInitCollection();
       const doc = {a: 1, _id: seededID};
       coll.delegate._ensureDocumentId(doc, connMock, seed);
       expect(doc._id).to.be.equal(seededID);
