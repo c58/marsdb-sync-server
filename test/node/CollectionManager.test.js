@@ -75,6 +75,32 @@ describe('CollectionManager', function () {
           .args[1].should.be.deep.equal('test');
       });
     });
+
+    it('should return added if options.waitReady provided and id is valid', function () {
+      const connMock = {
+        on: sinon.spy(),
+        sendResult: sinon.spy(),
+        sendUpdated: sinon.spy(),
+        subManager: {
+          whenAllCursorsUpdated: () => Promise.resolve(),
+          _handleAcceptedRemoteInsert: sinon.spy(),
+        },
+      };
+      const seed = Random.default().id(20);
+      const sequenceSeed = [seed, `/collection/test`];
+      const seededID = Random.createWithSeeds.apply(null, sequenceSeed).id(17);
+      const coll = new Collection('test');
+      const manager = new MethodCallManager(connMock);
+      const handler = connMock.on.getCall(0).args[1];
+      coll._lazyInitCollection();
+      return handler({
+        method: '/test/insert',
+        params: [{a: 1, _id: seededID}, {waitReady: true}],
+        randomSeed: seed,
+      }).then((docId) => {
+        connMock.subManager._handleAcceptedRemoteInsert.should.have.callCount(0);
+      });
+    });
   });
 
   describe('#_remoteUpdate', function () {

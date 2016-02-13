@@ -299,15 +299,6 @@ describe('SubscriptionManager', function () {
       connMock.sendNoSub.getCall(0).args[1].should.be.instanceof(Error);
     });
 
-    it('should do nothing if subscription with given id already exists', function () {
-      const cb = sinon.spy();
-      const manager = new SubscriptionManager(connMock);
-      const handler = connMock.on.getCall(0).args[1];
-      manager._subscribed['1'] = {};
-      utils.publish('pub1', ()=>{});
-      expect(handler({id: '1', name: 'pub1'})).to.be.undefined;
-    });
-
     it('should make subscription, start it and return promise', function () {
       const cb = sinon.spy();
       const manager = new SubscriptionManager(connMock);
@@ -339,6 +330,83 @@ describe('SubscriptionManager', function () {
           connMock.sendAdded.should.have.callCount(3);
           connMock.sendReady.should.have.callCount(1);
         })
+      });
+    });
+
+    it('should filter out null/undefined result from publisher', function () {
+      const cb = sinon.spy();
+      const manager = new SubscriptionManager(connMock);
+      const collA = new Collection('a');
+      const collB = new Collection('b');
+      const collC = new Collection('c');
+
+      utils.publish('testPubNull', (ctx) => null);
+      utils.publish('testPubNullArr', (ctx) => [null]);
+      utils.publish('testPubNullArrWithCur', (ctx) => [null, collA.find()]);
+      utils.publish('testPubUndef', (ctx) => undefined);
+
+      return Promise.all([
+        collA.insert({a: 1, _id: '1'}),
+        collB.insert({b: 1, _id: '1'}),
+        collC.insert({c: 1, _id: '1'}),
+      ]).then(() => {
+        const handler = connMock.on.getCall(0).args[1];
+        return handler({id: '1', name: 'testPubNull'}).then(() => {
+          connMock.sendAdded.should.have.callCount(0);
+          connMock.sendReady.should.have.callCount(1);
+        }).then(() =>
+          handler({id: '2', name: 'testPubNullArr'}).then(() => {
+            connMock.sendAdded.should.have.callCount(0);
+            connMock.sendReady.should.have.callCount(2);
+          })
+        ).then(() =>
+          handler({id: '3', name: 'testPubNullArrWithCur'}).then(() => {
+            connMock.sendAdded.should.have.callCount(1);
+            connMock.sendReady.should.have.callCount(3);
+          })
+        ).then(() =>
+          handler({id: '4', name: 'testPubUndef'}).then(() => {
+            connMock.sendAdded.should.have.callCount(1);
+            connMock.sendReady.should.have.callCount(4);
+          })
+        );
+      });
+    });
+
+    it('should do nothing if subscription with given id already exists', function () {
+      const cb = sinon.spy();
+      const manager = new SubscriptionManager(connMock);
+      utils.publish('testPubNull', (ctx) => null);
+      const handler = connMock.on.getCall(0).args[1];
+      handler({id: '1', name: 'testPubNull'});
+      connMock.emit.should.have.callCount(0);
+      handler({id: '1', name: 'testPubNull'});
+      connMock.emit.should.have.callCount(0);
+      connMock.sendNoSub.should.have.callCount(0);
+    });
+  });
+
+  describe('#updateSubscriptions', function () {
+    it('should recall all publishers and replace cursors for each sub', function () {
+      const cb = sinon.spy();
+      const manager = new SubscriptionManager(connMock);
+      const collA = new Collection('a');
+      let reqA = 1;
+      utils.publish('testPub', (ctx) => collA.find({a: reqA}));
+
+      return collA.insert({a: 1, _id: '1'}).then(() => {
+        const handler = connMock.on.getCall(0).args[1];
+        return handler({id: '1', name: 'testPub'}).then(() => {
+          connMock.sendRemoved.should.have.callCount(0);
+          connMock.sendAdded.should.have.callCount(1);
+          connMock.sendReady.should.have.callCount(1);
+          reqA = 0;
+          return manager.updateSubscriptions();
+        }).then(() => {
+          connMock.sendRemoved.should.have.callCount(1);
+          connMock.sendAdded.should.have.callCount(1);
+          connMock.sendReady.should.have.callCount(1);
+        });
       });
     });
   });
