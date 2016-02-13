@@ -198,6 +198,43 @@ describe('Subscription', function () {
       sub._stoppers = [{}, {}];
       (() => sub.start()).should.throw(Error);
     });
+
+    it('should empty all documents and send removed if no cursors provided', function () {
+      const collA = new Collection('a');
+      const collB = new Collection('b');
+      const collC = new Collection('c');
+
+      return Promise.all([
+        collA.insert({a: 1, _id: '1'}),
+        collB.insert({b: 1, _id: '1'}),
+        collC.insert({c: 1, _id: '1'}),
+      ]).then(() => {
+        const cb = sinon.spy();
+        const cursors = [
+          collA.find({a: 1}),
+          collB.find({b: 1}),
+          collC.find({c: 1}),
+        ];
+        const sub = new Subscription(cursors, cb);
+        return sub.start().then((res) => {
+          res.should.have.length(3);
+          cb.should.have.callCount(1);
+          return sub.replaceCursors([]);
+        }).then((res) => {
+          res.should.have.length(0);
+          cb.should.have.callCount(2);
+          cb.getCall(1).args[0].should.be.deep.equal({
+            "added": {"a": {}, "b": {}, "c": {}},
+            "changed": {"a": {}, "b": {}, "c": {}},
+            "removed": {
+              "a": {"1": {"_id": "1", "a": 1}},
+              "b": {"1": {"_id": "1", "b": 1}},
+              "c": {"1": {"_id": "1", "c": 1}},
+            }
+          });
+        });
+      });
+    });
   });
 
   describe('#stop', function () {
@@ -234,6 +271,33 @@ describe('Subscription', function () {
       stoppers[0].stop.should.have.callCount(1);
       stoppers[1].stop.should.have.callCount(1);
       stoppers[2].stop.should.have.callCount(1);
+    });
+  });
+
+  describe('#replaceCursors', function () {
+    it('it should replace current cursors and run subscription', function () {
+      const collA = new Collection('a');
+      return collA.insertAll([{a: 1, _id: '1'}, {a: 2, _id: '2'}]).then(() => {
+        const cb = sinon.spy();
+        const sub = new Subscription([collA.find({a: 1})], cb);
+        return sub.start().then((res) => {
+          res.should.have.length(1);
+          res[0].should.have.length(1);
+          res[0][0].should.be.deep.equal({a: 1, _id: '1'});
+          cb.should.have.callCount(1);
+          return sub.replaceCursors([collA.find({a: 2})]);
+        }).then((res) => {
+          res.should.have.length(1);
+          res[0].should.have.length(1);
+          res[0][0].should.be.deep.equal({a: 2, _id: '2'});
+          cb.should.have.callCount(2);
+          cb.getCall(1).args[0].should.be.deep.equal({
+            "added": {"a": {"2": {a: 2, _id: '2'}}},
+            "changed": {"a": {}},
+            "removed": {"a": {"1": {"_id": "1", "a": 1}}},
+          });
+        })
+      });
     });
   });
 });
