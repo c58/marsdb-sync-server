@@ -51,8 +51,6 @@ var AutopublishManager = function () {
   _createClass(AutopublishManager, null, [{
     key: 'configure',
     value: function configure() {
-      var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
       var _defaultDelegate = _marsdb.Collection.defaultDelegate();
 
       var RegisterCollectoinDelegate = function (_defaultDelegate2) {

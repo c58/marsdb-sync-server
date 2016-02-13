@@ -12,8 +12,6 @@ exports._diffObjects = _diffObjects;
 exports._diffAddedWithRemote = _diffAddedWithRemote;
 exports._diffChangedWithRemote = _diffChangedWithRemote;
 exports._diffRemovedWithRemote = _diffRemovedWithRemote;
-exports._removeZeroDocuments = _removeZeroDocuments;
-exports._zeroAllDocuments = _zeroAllDocuments;
 exports._clearPublishers = _clearPublishers;
 exports.publish = publish;
 
@@ -28,6 +26,14 @@ var _map3 = _interopRequireDefault(_map2);
 var _values2 = require('fast.js/object/values');
 
 var _values3 = _interopRequireDefault(_values2);
+
+var _keys2 = require('fast.js/object/keys');
+
+var _keys3 = _interopRequireDefault(_keys2);
+
+var _filter2 = require('fast.js/array/filter');
+
+var _filter3 = _interopRequireDefault(_filter2);
 
 var _forEach = require('fast.js/forEach');
 
@@ -59,7 +65,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 // Internals
 var _publishers = {};
-
 function _noop() {}
 
 /**
@@ -103,17 +108,23 @@ function _diffObjects() {
  * @param  {Object} remoteDocs
  * @return {Object}
  */
-function _diffAddedWithRemote(subAdded, remoteDocs) {
+function _diffAddedWithRemote(subAdded, remoteDocs, subId) {
   var added = {};
 
   (0, _forEach2.default)(subAdded, function (docs, collName) {
     remoteDocs[collName] = remoteDocs[collName] || {};
     added[collName] = added[collName] || {};
     (0, _forEach2.default)(docs, function (d) {
-      if (!remoteDocs[collName][d._id]) {
+      var remDoc = remoteDocs[collName][d._id];
+      if (!remDoc) {
         added[collName][d._id] = d;
-        remoteDocs[collName][d._id] = { count: 1, doc: d };
-      } else {
+        remoteDocs[collName][d._id] = { count: 1, doc: d, subId: subId };
+      } else if (remDoc.subId !== subId) {
+        if ((0, _keys3.default)(remDoc.doc).length < (0, _keys3.default)(d).length) {
+          remDoc.subId = subId;
+          remDoc.doc = d;
+          added[collName][d._id] = d;
+        }
         remoteDocs[collName][d._id].count += 1;
       }
     });
@@ -130,13 +141,14 @@ function _diffAddedWithRemote(subAdded, remoteDocs) {
  * @param  {Object} remoteDocs
  * @return {Object}
  */
-function _diffChangedWithRemote(subChanged, remoteDocs) {
+function _diffChangedWithRemote(subChanged, remoteDocs, subId) {
   var changed = {};
 
   (0, _forEach2.default)(subChanged, function (docs, collName) {
     changed[collName] = changed[collName] || {};
     (0, _forEach2.default)(docs, function (d) {
-      if (remoteDocs[collName] && remoteDocs[collName][d._id]) {
+      var remDoc = remoteDocs[collName] && remoteDocs[collName][d._id];
+      if (remDoc && (remDoc.subId === subId || !remDoc.subId)) {
         (function () {
           var remoteDoc = remoteDocs[collName][d._id].doc;
           var changes = { fields: {}, cleared: [] };
@@ -155,6 +167,7 @@ function _diffChangedWithRemote(subChanged, remoteDocs) {
             }
           });
 
+          remDoc.subId = subId;
           changed[collName][d._id] = changes;
           remoteDocs[collName][d._id].doc = d;
         })();
@@ -173,16 +186,20 @@ function _diffChangedWithRemote(subChanged, remoteDocs) {
  * @param  {Object} remoteDocs
  * @return {Object}
  */
-function _diffRemovedWithRemote(subRemoved, remoteDocs) {
+function _diffRemovedWithRemote(subRemoved, remoteDocs, subId) {
   var removed = {};
 
   (0, _forEach2.default)(subRemoved, function (docs, collName) {
     removed[collName] = removed[collName] || {};
     (0, _forEach2.default)(docs, function (d) {
-      if (remoteDocs[collName] && remoteDocs[collName][d._id]) {
-        remoteDocs[collName][d._id].count -= 1;
+      var remDoc = remoteDocs[collName] && remoteDocs[collName][d._id];
+      if (remDoc) {
+        remDoc.count -= 1;
 
-        if (remoteDocs[collName][d._id].count <= 0) {
+        if (remDoc.subId === subId) {
+          delete remDoc.subId;
+        }
+        if (remDoc.count <= 0) {
           removed[collName][d._id] = d;
           delete remoteDocs[collName][d._id];
         }
@@ -192,20 +209,6 @@ function _diffRemovedWithRemote(subRemoved, remoteDocs) {
 
   return removed;
 }
-
-/**
- * Remove all documents with zero count and return list
- * of removed documents by collection
- * @param  {Object} remoteDocs
- * @return {Object}
- */
-function _removeZeroDocuments(remoteDocs) {}
-
-/**
- * Zero counters of all documents
- * @param  {Object} remoteDocs
- */
-function _zeroAllDocuments(remoteDocs) {}
 
 /**
  * Remove all registered publishers
@@ -221,7 +224,8 @@ function _clearPublishers() {
  */
 function publish(name, fn) {
   (0, _invariant2.default)(!_publishers[name], 'publish(...): publisher with name \'%s\' already defined', name);
-  (0, _invariant2.default)(_checkTypes2.default.function(fn), 'publish(...): publish \'%s\' must be a function');
+  (0, _invariant2.default)(_checkTypes2.default['function'](fn), // eslint-disable-line
+  'publish(...): publish \'%s\' must be a function');
 
   _publishers[name] = fn;
 }
@@ -234,35 +238,7 @@ function publish(name, fn) {
 
 var SubscriptionManager = function () {
   function SubscriptionManager(ddpConn) {
-    var _this = this;
-
     _classCallCheck(this, SubscriptionManager);
-
-    this._handleSubscriptionUpdate = function (res) {
-      var _appendDocuments2 = _this._appendDocuments(res.added, res.changed);
-
-      var added = _appendDocuments2.added;
-      var changed = _appendDocuments2.changed;
-
-      var removed = _this._removeDocuments(res.removed);
-      var connection = _this._ddpConn;
-
-      (0, _forEach2.default)(added, function (docs, collName) {
-        (0, _forEach2.default)(docs, function (d, id) {
-          connection.sendAdded(collName, id, d);
-        });
-      });
-      (0, _forEach2.default)(changed, function (docs, collName) {
-        (0, _forEach2.default)(docs, function (d, id) {
-          connection.sendChanged(collName, id, d.fields, d.cleared);
-        });
-      });
-      (0, _forEach2.default)(removed, function (docs, collName) {
-        (0, _forEach2.default)(docs, function (d, id) {
-          connection.sendRemoved(collName, id);
-        });
-      });
-    };
 
     this._ddpConn = ddpConn;
     this._subscribed = {};
@@ -287,10 +263,10 @@ var SubscriptionManager = function () {
   }, {
     key: 'updateSubscriptions',
     value: function updateSubscriptions() {
-      var _this2 = this;
+      var _this = this;
 
       return Promise.all((0, _map3.default)((0, _values3.default)(this._subscribed), function (sub) {
-        var newCursors = _this2._callPublisher(sub.name, sub.params);
+        var newCursors = _this._callPublisher(sub.name, sub.params);
         return sub.replaceCursors(newCursors);
       }));
     }
@@ -301,7 +277,10 @@ var SubscriptionManager = function () {
       var connection = this._ddpConn;
       var ctx = { data: connection.data, connection: connection };
       var result = fn.apply(undefined, [ctx].concat(_toConsumableArray(params)));
-      return _checkTypes2.default.array(result) ? result : [result];
+      var resultArr = _checkTypes2.default.array(result) ? result : [result];
+      return (0, _filter3.default)(resultArr, function (x) {
+        return x;
+      });
     }
   }, {
     key: '_handleClose',
@@ -315,7 +294,7 @@ var SubscriptionManager = function () {
   }, {
     key: '_handleSubscribe',
     value: function _handleSubscribe(_ref2) {
-      var _this3 = this;
+      var _this2 = this;
 
       var id = _ref2.id;
       var name = _ref2.name;
@@ -325,12 +304,13 @@ var SubscriptionManager = function () {
       var callResult = (0, _try3.default)(function () {
         (0, _invariant2.default)(_publishers[name], 'There is no publisher with name \'%s\'', name);
 
-        if (!_this3._subscribed[id]) {
+        if (!_this2._subscribed[id]) {
           var _ret2 = function () {
-            var connection = _this3._ddpConn;
-            var cursors = _this3._callPublisher(name, params);
-            var sub = new _Subscription2.default(cursors, _this3._handleSubscriptionUpdate, name, params);
-            _this3._subscribed[id] = sub;
+            var connection = _this2._ddpConn;
+            var cursors = _this2._callPublisher(name, params);
+            var callback = (0, _bind3.default)(_this2._handleSubscriptionUpdate, _this2, id);
+            var sub = new _Subscription2.default(cursors, callback, name, params);
+            _this2._subscribed[id] = sub;
 
             return {
               v: sub.start().then(function () {
@@ -340,6 +320,8 @@ var SubscriptionManager = function () {
           }();
 
           if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+        } else {
+          return Promise.resolve();
         }
       });
 
@@ -354,18 +336,18 @@ var SubscriptionManager = function () {
   }, {
     key: '_handleUnsubscribe',
     value: function _handleUnsubscribe(_ref3) {
-      var _this4 = this;
+      var _this3 = this;
 
       var id = _ref3.id;
 
       if (this._subscribed[id]) {
         var _ret3 = function () {
-          var sub = _this4._subscribed[id];
-          var connection = _this4._ddpConn;
+          var sub = _this3._subscribed[id];
+          var connection = _this3._ddpConn;
           var docsMap = sub.getDocumentsMap();
-          var removed = _this4._removeDocuments(docsMap);
+          var removed = _this3._removeDocuments(docsMap);
 
-          delete _this4._subscribed[id];
+          delete _this3._subscribed[id];
           sub.stop();
 
           (0, _forEach2.default)(removed, function (docs, collName) {
@@ -385,6 +367,33 @@ var SubscriptionManager = function () {
       return false;
     }
   }, {
+    key: '_handleSubscriptionUpdate',
+    value: function _handleSubscriptionUpdate(subId, res) {
+      var _appendDocuments2 = this._appendDocuments(res.added, res.changed, subId);
+
+      var added = _appendDocuments2.added;
+      var changed = _appendDocuments2.changed;
+
+      var removed = this._removeDocuments(res.removed, subId);
+      var connection = this._ddpConn;
+
+      (0, _forEach2.default)(added, function (docs, collName) {
+        (0, _forEach2.default)(docs, function (d, id) {
+          connection.sendAdded(collName, id, d);
+        });
+      });
+      (0, _forEach2.default)(changed, function (docs, collName) {
+        (0, _forEach2.default)(docs, function (d, id) {
+          connection.sendChanged(collName, id, d.fields, d.cleared);
+        });
+      });
+      (0, _forEach2.default)(removed, function (docs, collName) {
+        (0, _forEach2.default)(docs, function (d, id) {
+          connection.sendRemoved(collName, id);
+        });
+      });
+    }
+  }, {
     key: '_handleAcceptedRemoteInsert',
     value: function _handleAcceptedRemoteInsert(doc, collName) {
       this._remoteDocs[collName] = this._remoteDocs[collName] || {};
@@ -392,16 +401,16 @@ var SubscriptionManager = function () {
     }
   }, {
     key: '_appendDocuments',
-    value: function _appendDocuments(subAdded, subChanged) {
+    value: function _appendDocuments(subAdded, subChanged, subId) {
       return {
-        added: _diffAddedWithRemote(subAdded, this._remoteDocs),
-        changed: _diffChangedWithRemote(subChanged, this._remoteDocs)
+        added: _diffAddedWithRemote(subAdded, this._remoteDocs, subId),
+        changed: _diffChangedWithRemote(subChanged, this._remoteDocs, subId)
       };
     }
   }, {
     key: '_removeDocuments',
-    value: function _removeDocuments(subRemoved) {
-      return _diffRemovedWithRemote(subRemoved, this._remoteDocs);
+    value: function _removeDocuments(subRemoved, subId) {
+      return _diffRemovedWithRemote(subRemoved, this._remoteDocs, subId);
     }
   }]);
 

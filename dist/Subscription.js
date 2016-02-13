@@ -135,18 +135,28 @@ var Subscription = function () {
       var _this = this;
 
       (0, _invariant2.default)(!this._stoppers || this._stoppers.length === 0, 'start(...): subscription is already started');
-      var stopeprs = (0, _map3.default)(this._cursors, function (cursor) {
-        return cursor.observe(function () {
-          return _this._handleCursorChange();
+
+      if (this._cursors.length > 0) {
+        var stopeprs = (0, _map3.default)(this._cursors, function (cursor) {
+          return cursor.observe(function () {
+            return _this._handleCursorChange();
+          });
         });
-      });
-      this._stoppers = stopeprs;
-      return Promise.all(stopeprs);
+        this._stoppers = stopeprs;
+        return Promise.all(stopeprs);
+      } else {
+        return this._handleCursorChange().then(function () {
+          return [];
+        });
+      }
     }
   }, {
     key: 'replaceCursors',
     value: function replaceCursors(newCursors) {
-      this.stop();
+      (0, _forEach2.default)(this._stoppers, function (stopper) {
+        return stopper.stop();
+      });
+      this._stoppers = [];
       this._cursors = newCursors;
       return this.start();
     }
