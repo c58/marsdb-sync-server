@@ -84,95 +84,135 @@ describe('SubscriptionManager', function () {
       const remote = {a: {}};
       const result = utils._diffAddedWithRemote(
         {a: {id_1: {_id: 'id_1', a: 1}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {id_1: {_id: 'id_1', a: 1}}});
-      remote.should.be.deep.equals({a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}});
+      remote.should.be.deep.equals({a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}});
     });
 
     it('should make a new collection in a remote if it is not exists', function () {
       const remote = {b: {}};
       const result = utils._diffAddedWithRemote(
         {a: {id_1: {_id: 'id_1', a: 1}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {id_1: {_id: 'id_1', a: 1}}});
       remote.should.be.deep.equals({
         b: {},
-        a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}
+        a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}
       });
     });
 
     it('should increase remote counter if doc already presented', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '321', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffAddedWithRemote(
         {a: {id_1: {_id: 'id_1', a: 1}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {}});
-      remote.should.be.deep.equals({a: {id_1: {count: 2, doc: {_id: 'id_1', a: 1}}}});
+      remote.should.be.deep.equals({a: {id_1: {count: 2, subId: '321', doc: {_id: 'id_1', a: 1}}}});
     });
 
     it('should ignore changed document and just increase counter', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '321', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffAddedWithRemote(
         {a: {id_1: {_id: 'id_1', b: 3}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {}});
-      remote.should.be.deep.equals({a: {id_1: {count: 2, doc: {_id: 'id_1', a: 1}}}});
+      remote.should.be.deep.equals({a: {id_1: {subId: '321', count: 2, doc: {_id: 'id_1', a: 1}}}});
+    });
+
+    it('should change sub owner of a document if doc contains more fields', function () {
+      const remote = {a: {id_1: {subId: '321', count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const result = utils._diffAddedWithRemote(
+        {a: {id_1: {_id: 'id_1', a: 1, b: 3}}},
+        remote, '123'
+      );
+      result.should.be.deep.equals({a: {id_1: {_id: 'id_1', a: 1, b: 3}}});
+      remote.should.be.deep.equals({a: {id_1: {count: 2, subId: '123', doc: {_id: 'id_1', a: 1, b: 3}}}});
+    });
+
+    it('should do nothing if doucment for same sub already added', function () {
+      const remote = {a: {id_1: {subId: '321', count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const result = utils._diffAddedWithRemote(
+        {a: {id_1: {_id: 'id_1', a: 1}}},
+        remote, '321'
+      );
+      result.should.be.deep.equals({a: {}});
+      remote.should.be.deep.equals({a: {id_1: {count: 1, subId: '321', doc: {_id: 'id_1', a: 1}}}});
     });
   });
 
   describe('#_diffChangedWithRemote', function () {
     it('should return changed fields only', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffChangedWithRemote(
         {a: {id_1: {_id: 'id_1', a: 2}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {id_1: {"cleared": [], fields: {a: 2}}}});
-      remote.a.id_1.should.be.deep.equals({count: 1, doc: {_id: 'id_1', a: 2}});
+      remote.a.id_1.should.be.deep.equals({subId: '123', count: 1, doc: {_id: 'id_1', a: 2}});
     });
 
     it('should returned cleared fields', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffChangedWithRemote(
         {a: {id_1: {_id: 'id_1'}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {id_1: {"cleared": ['a'], fields: {}}}});
-      remote.a.id_1.should.be.deep.equals({count: 1, doc: {_id: 'id_1'}});
+      remote.a.id_1.should.be.deep.equals({subId: '123', count: 1, doc: {_id: 'id_1'}});
     });
 
     it('should return changed and cleared fields', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffChangedWithRemote(
         {a: {id_1: {_id: 'id_1', b: 1}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {id_1: {"cleared": ['a'], fields: {b: 1}}}});
-      remote.a.id_1.should.be.deep.equals({count: 1, doc: {_id: 'id_1', b: 1}});
+      remote.a.id_1.should.be.deep.equals({subId: '123', count: 1, doc: {_id: 'id_1', b: 1}});
     });
 
     it('should return empty result if nothing changed', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffChangedWithRemote(
         {a: {id_1: {_id: 'id_1', a: 1}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {id_1: {"cleared": [], fields: {}}}});
-      remote.a.id_1.should.be.deep.equals({count: 1, doc: {_id: 'id_1', a: 1}});
+      remote.a.id_1.should.be.deep.equals({subId: '123', count: 1, doc: {_id: 'id_1', a: 1}});
     });
 
     it('should ignore documents not presented in a remote', function () {
-      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffChangedWithRemote(
         {a: {id_2: {_id: 'id_2', a: 1}}},
-        remote
+        remote, '123'
       );
       result.should.be.deep.equals({a: {}});
-      remote.a.should.be.deep.equals({id_1: {count: 1, doc: {_id: 'id_1', a: 1}}});
+      remote.a.should.be.deep.equals({id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1}}});
+    });
+
+    it('should change only a document of own subscription', function () {
+      const remote = {a: {id_1: {subId: '123', count: 1, doc: {_id: 'id_1', a: 1, b: 2}}}};
+      const result = utils._diffChangedWithRemote(
+        {a: {id_1: {_id: 'id_1', a: 2}}},
+        remote, '321'
+      );
+      result.should.be.deep.equals({a: {}});
+      remote.a.id_1.should.be.deep.equals({subId: '123', count: 1, doc: {_id: 'id_1', a: 1, b: 2}});
+    });
+
+    it('should change object and own the sub if it have no owners', function () {
+      const remote = {a: {id_1: {count: 1, doc: {_id: 'id_1', a: 1, b: 2}}}};
+      const result = utils._diffChangedWithRemote(
+        {a: {id_1: {_id: 'id_1', a: 2}}},
+        remote, '321'
+      );
+      result.should.be.deep.equals({a: {id_1: {"cleared": ['b'], fields: {a: 2}}}});
+      remote.a.id_1.should.be.deep.equals({subId: '321', count: 1, doc: {_id: 'id_1', a: 2}});
     });
   });
 
@@ -188,13 +228,13 @@ describe('SubscriptionManager', function () {
     });
 
     it('should decrease count in remote of removed document', function () {
-      const remote = {a: {id_1: {count: 10, doc: {_id: 'id_1', a: 1}}}};
+      const remote = {a: {id_1: {subId: '123', count: 10, doc: {_id: 'id_1', a: 1}}}};
       const result = utils._diffRemovedWithRemote(
         {a: {id_1: {_id: 'id_1', a: 2}}},
-        remote
+        remote, '321'
       );
       result.should.be.deep.equals({a: {}});
-      remote.should.be.deep.equals({a: {id_1: {count: 9, doc: {_id: 'id_1', a: 1}}}});
+      remote.should.be.deep.equals({a: {id_1: {subId: '123', count: 9, doc: {_id: 'id_1', a: 1}}}});
     });
 
     it('should do nothing if document is not presented on remote', function () {
@@ -205,6 +245,16 @@ describe('SubscriptionManager', function () {
       );
       result.should.be.deep.equals({a: {}});
       remote.should.be.deep.equals({a: {id_1: {count: 10, doc: {_id: 'id_1', a: 1}}}});
+    });
+
+    it('should remove owner of document if owner is equsl to removed', function () {
+      const remote = {a: {id_1: {subId: '123', count: 10, doc: {_id: 'id_1', a: 1}}}};
+      const result = utils._diffRemovedWithRemote(
+        {a: {id_1: {_id: 'id_1', a: 2}}},
+        remote, '123'
+      );
+      result.should.be.deep.equals({a: {}});
+      remote.should.be.deep.equals({a: {id_1: {count: 9, doc: {_id: 'id_1', a: 1}}}});
     });
   });
 
@@ -460,7 +510,7 @@ describe('SubscriptionManager', function () {
   describe('#_handleSubscriptionUpdate', function () {
     it('should send all updates to a client', function () {
       const manager = new SubscriptionManager(connMock);
-      manager._handleSubscriptionUpdate({
+      manager._handleSubscriptionUpdate('123', {
         added: {a: {id1: {_id:'id1', a: 1}}},
         removed: {b: {id1: {_id:'id1', a: 1}}},
         changed: {c: {id1: {_id:'id1', a: 1}}},
@@ -469,7 +519,7 @@ describe('SubscriptionManager', function () {
       connMock.sendRemoved.should.have.callCount(0);
       connMock.sendChanged.should.have.callCount(0);
 
-      manager._handleSubscriptionUpdate({
+      manager._handleSubscriptionUpdate('123', {
         added: {b: {id1: {_id:'id1', a: 1}}},
         removed: {a: {id2: {_id:'id2', a: 1}}},
         changed: {a: {id1: {_id:'id1', c: 1}}},
@@ -478,7 +528,7 @@ describe('SubscriptionManager', function () {
       connMock.sendRemoved.should.have.callCount(0);
       connMock.sendChanged.should.have.callCount(1);
 
-      manager._handleSubscriptionUpdate({
+      manager._handleSubscriptionUpdate('123', {
         added: {},
         removed: {b: {id1: {_id:'id1', a: 1}}},
         changed: {},
