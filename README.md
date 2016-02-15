@@ -23,11 +23,11 @@ It does not support scaling, handled only changes happened on one instance. Scal
 ## Examples
 
 ### Basic Express/Webpack example
-The repository comes with a simple example. To try it out:
+The [client repository](https://github.com/c58/marsdb-sync-client) comes with a simple example. To try it out:
 
 ```
-git clone https://github.com/c58/marsdb-sync-server.git
-cd marsdb-sync-server/example && npm install
+git clone https://github.com/c58/marsdb-sync-client.git
+cd marsdb-sync-client/example && npm install
 npm start
 ```
 
